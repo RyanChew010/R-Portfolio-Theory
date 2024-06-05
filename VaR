@@ -1,0 +1,51 @@
+#VaR, 1% and 5%
+library(fPortfolio)
+library(timeSeries)
+library(quantmod)
+library(dplyr)
+library(PerformanceAnalytics)
+library(ggplot2)
+library(TTR)
+library(corrplot)
+library(sn)
+library(rugarch)
+
+#stock data 
+AMD <- getSymbols("AMD", from = '2022-01-01', to = '2024-06-03', auto.assign=F)
+AMD2 <- AMD$AMD.Adjusted
+
+#Returns 
+AMD_Dret <- dailyReturn(AMD2, type = 'log')
+AMD_Mret <- monthlyReturn(AMD2, type = 'log')
+
+#Historical VaR, w = 100,000
+w = 100000
+AMD_Mquantile <- quantile(AMD_Mret, probs=c(0.01,0.05))
+AMD_Dquantile <- quantile(AMD_Dret, probs=c(0.01,0.05))
+dailyABCvar <- -w*AMD_Dquantile
+monthlyABCvar <- -w*AMD_Mquantile
+cbind(dailyABCvar,monthlyABCvar)
+
+#Plot + normal distribution, daily
+AMD_r <- coredata(AMD_Dret)
+AMD_norm<- dnorm(x=AMD_r, mean=mean(AMD_r),sd=sd(AMD_r))
+data_rnorm<- data.frame(AMD_r,AMD_norm)
+colnames(data_rnorm)<- c('x','y')
+var2<- quantile(AMD_r, 0.01)
+p2<- ggplot(data_rnorm, aes(x = x, y = y)) + geom_line(linewidth = 2) + 
+  geom_vline(xintercept = var2, lty = 2, col = "red", linewidth = 2) + theme_bw() +
+  labs(title = "Normal Distribution and 1% empircal VaR")
+p2
+
+#plot + normal d, monthly
+AMD_rm <- coredata(AMD_Mret)
+AMD_mnorm<- dnorm(x=AMD_rm, mean=mean(AMD_rm), sd=sd(AMD_rm))
+data_mnorm<- data.frame(AMD_rm, AMD_mnorm)
+colnames(data_mnorm)<- c('x','y')
+var3<- quantile(AMD_rm, 0.01)
+p4<- ggplot(data_mnorm, aes(x = x, y = y)) + geom_line(linewidth = 2) + 
+  geom_vline(xintercept = var3, lty = 2, col = "red", linewidth = 2) + theme_bw() +
+  labs(title = "Normal Distribution and 1% empircal VaR")
+p4
+
+
